@@ -37,6 +37,8 @@ BlackRoadFont brFont(&tft);  // BlackRoad Mono font system
 #define COLOR_SUNRISE      COLOR_AMBER       // #F5A623 (was #FF9D00)
 #define COLOR_CYBER_BLUE   COLOR_ELECTRIC_BLUE // #2979FF (was #0066FF)
 #define COLOR_VIVID_PUR    COLOR_VIOLET      // #9C27B0 (was #7700FF)
+#define COLOR_WARM         COLOR_ORANGE      // #F26522 (warm orange)
+#define COLOR_DEEP_MAG     COLOR_DEEP_PURPLE // #5E35B1 (deep magenta/purple)
 
 // Golden Ratio Spacing System (φ = 1.618)
 #define SPACE_XS   8   // Base
@@ -87,7 +89,8 @@ enum Screen {
   SCREEN_ALERT_HISTORY,    // Alert History - View past 10 alerts
   SCREEN_WEATHER,          // Weather - OpenWeatherMap 5-day forecast
   SCREEN_GITHUB,           // GitHub - Repo stats, PRs, issues
-  SCREEN_LINEAR            // Linear - Task tracking integration
+  SCREEN_LINEAR,           // Linear - Task tracking integration
+  SCREEN_RECENT_APPS       // 🔥 Recent Apps Switcher (BETTER THAN iPHONE!)
 };
 
 Screen currentScreen = SCREEN_LOCK;
@@ -357,6 +360,15 @@ int historyCount = 8;
 bool keyboardVisible = false;         // Is keyboard overlay showing?
 Screen screenBeforeKeyboard = SCREEN_HOME;  // Return to this screen after keyboard
 
+// 🔥 ENHANCED NAVIGATION SYSTEM - Better than iPhone!
+Screen navigationHistory[10];  // Navigation stack
+int navigationHistoryCount = 0;
+Screen recentApps[5];         // Recently used apps
+int recentAppsCount = 0;
+unsigned long lastSwipeTime = 0;
+int swipeStartX = 0;
+int swipeStartY = 0;
+
 // Haptic/Audio feedback (NO iPHONE HAS THIS!)
 #define BUZZER_PIN 25  // Can use any available GPIO
 void playBeep(int duration = 50) {
@@ -498,22 +510,99 @@ void drawBackButton(bool pressed = false) {
 }
 
 // Bottom Navigation Bar - Always visible, easy to tap!
+// 🔥 ENHANCED NAVIGATION - Add screen to history
+void pushNavigationHistory(Screen screen) {
+  if (screen == SCREEN_LOCK || screen == SCREEN_HOME || screen == SCREEN_KEYBOARD) {
+    return;  // Don't track these
+  }
+
+  // Add to history
+  if (navigationHistoryCount < 10) {
+    navigationHistory[navigationHistoryCount++] = screen;
+  } else {
+    // Shift array left and add to end
+    for (int i = 0; i < 9; i++) {
+      navigationHistory[i] = navigationHistory[i + 1];
+    }
+    navigationHistory[9] = screen;
+  }
+
+  // Update recent apps (no duplicates)
+  bool found = false;
+  for (int i = 0; i < recentAppsCount; i++) {
+    if (recentApps[i] == screen) {
+      found = true;
+      // Move to front
+      Screen temp = recentApps[i];
+      for (int j = i; j > 0; j--) {
+        recentApps[j] = recentApps[j - 1];
+      }
+      recentApps[0] = temp;
+      break;
+    }
+  }
+
+  if (!found && recentAppsCount < 5) {
+    // Shift right and add at front
+    for (int i = recentAppsCount; i > 0; i--) {
+      recentApps[i] = recentApps[i - 1];
+    }
+    recentApps[0] = screen;
+    if (recentAppsCount < 5) recentAppsCount++;
+  }
+}
+
+// 🔥 ENHANCED NAVIGATION - Go back in history
+Screen popNavigationHistory() {
+  if (navigationHistoryCount > 0) {
+    return navigationHistory[--navigationHistoryCount];
+  }
+  return SCREEN_HOME;
+}
+
+// 🔥 ENHANCED NAVIGATION BAR - Context-aware buttons!
 void drawBottomNav() {
-  // Navigation bar background (full width at bottom) - BIGGER!
+  // Navigation bar background (full width at bottom)
   tft.fillRect(0, 270, 240, 50, COLOR_DARK_GRAY);
 
-  // Left arrow - BACK (always goes home) - BIGGER BUTTONS!
-  tft.fillRoundRect(10, 278, 80, 35, 6, COLOR_VIVID_PUR);
+  // Left button - BACK/HOME (smart navigation)
+  bool hasHistory = navigationHistoryCount > 0;
+  uint16_t backColor = hasHistory ? COLOR_VIOLET : COLOR_DEEP_PURPLE;
+  tft.fillRoundRect(10, 278, 70, 35, 6, backColor);
   tft.setTextColor(COLOR_WHITE);
   tft.setTextDatum(MC_DATUM);
-  brFont.drawMonoTextCentered("HOME", 50, 295, BR_MONO_SMALL, COLOR_WHITE);
 
-  // Right arrow - ACTION (context-specific) - BIGGER BUTTONS!
-  tft.fillRoundRect(150, 278, 80, 35, 6, COLOR_HOT_PINK);
-  brFont.drawMonoTextCentered("NEXT", 190, 295, BR_MONO_SMALL, COLOR_WHITE);
+  if (hasHistory) {
+    brFont.drawMonoTextCentered("BACK", 45, 295, BR_MONO_SMALL, COLOR_WHITE);
+  } else {
+    brFont.drawMonoTextCentered("HOME", 45, 295, BR_MONO_SMALL, COLOR_WHITE);
+  }
 
-  // Center indicator
-  tft.fillCircle(120, 295, 5, COLOR_CYBER_BLUE);
+  // Center - Screen indicator dot
+  tft.fillCircle(120, 295, 4, COLOR_AMBER);
+
+  // Right button - RECENT APPS
+  bool hasRecent = recentAppsCount > 1;  // More than current screen
+  uint16_t recentColor = hasRecent ? COLOR_HOT_PINK : COLOR_MAGENTA;
+  tft.fillRoundRect(160, 278, 70, 35, 6, recentColor);
+
+  if (hasRecent) {
+    // Draw stacked squares icon for recent apps
+    tft.fillRect(180, 285, 12, 12, COLOR_WHITE);
+    tft.fillRect(185, 290, 12, 12, COLOR_AMBER);
+    tft.fillRect(190, 295, 12, 12, COLOR_ELECTRIC_BLUE);
+  } else {
+    brFont.drawMonoTextCentered("APPS", 195, 295, BR_MONO_SMALL, COLOR_WHITE);
+  }
+
+  // Breadcrumb indicator (show depth)
+  if (navigationHistoryCount > 0) {
+    tft.setTextColor(COLOR_AMBER);
+    tft.setTextDatum(TC_DATUM);
+    char depth[8];
+    sprintf(depth, "·%d·", navigationHistoryCount);
+    tft.drawString(depth, 120, 275, 1);
+  }
 }
 
 // Enhanced button with shadow (universal component)
@@ -3011,6 +3100,89 @@ void drawLinear() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// 🔥 RECENT APPS SWITCHER - Better than iPhone multitasking!
+// ═══════════════════════════════════════════════════════════════════
+
+void drawRecentApps() {
+  tft.fillScreen(COLOR_BLACK);
+
+  // Title
+  tft.setTextColor(COLOR_HOT_PINK);
+  tft.setTextDatum(TC_DATUM);
+  tft.drawString("RECENT APPS", 120, 10, 2);
+
+  tft.setTextColor(COLOR_AMBER);
+  char subtitle[30];
+  sprintf(subtitle, "%d apps · Tap to switch", recentAppsCount);
+  tft.drawString(subtitle, 120, 32, 1);
+
+  // Draw recent app cards (vertically stacked)
+  int y = 55;
+  const char* appNames[] = {"CEO", "EXEC", "META", "WORK", "AI", "MSG", "CRM", "VPN",
+                             "ID", "FILE", "API", "SET", "CC", "CHAT", "TERM", "PAGR"};
+
+  for (int i = 0; i < recentAppsCount && i < 5; i++) {
+    Screen screen = recentApps[i];
+
+    // Skip if it's the current screen
+    if (screen == currentScreen) continue;
+
+    // Determine app info
+    int appIndex = screen - SCREEN_AI_INFERENCE;  // Offset to app array
+    const char* appName = "APP";
+    uint16_t appColor = COLOR_ELECTRIC_BLUE;
+
+    if (appIndex >= 0 && appIndex < 16) {
+      appName = appNames[appIndex];
+      appColor = apps[appIndex].color;
+    }
+
+    // App card with preview
+    bool isFirst = (i == 0);
+    drawCard(10, y, 220, 42, isFirst ? COLOR_DARK_GRAY : 0x1082);
+
+    // App icon circle
+    tft.fillCircle(32, y + 21, 15, appColor);
+    tft.setTextColor(COLOR_WHITE);
+    tft.setTextDatum(MC_DATUM);
+    tft.drawString(appName, 32, y + 21, 1);
+
+    // App title
+    tft.setTextColor(COLOR_WHITE);
+    tft.setTextDatum(ML_DATUM);
+    tft.drawString(appName, 55, y + 12, 2);
+
+    // Timestamp/status
+    tft.setTextColor(COLOR_AMBER);
+    tft.drawString("Active", 55, y + 28, 1);
+
+    // Arrow indicator on first item
+    if (isFirst) {
+      tft.setTextColor(COLOR_HOT_PINK);
+      tft.setTextDatum(MR_DATUM);
+      tft.drawString(">", 215, y + 21, 2);
+    }
+
+    y += 47;
+  }
+
+  if (recentAppsCount == 0) {
+    tft.setTextColor(COLOR_DEEP_PURPLE);
+    tft.setTextDatum(TC_DATUM);
+    tft.drawString("No recent apps", 120, 140, 2);
+    tft.setTextColor(COLOR_AMBER);
+    tft.drawString("Launch apps to see them here", 120, 165, 1);
+  }
+
+  // Instructions at bottom
+  tft.setTextColor(COLOR_DARK_GRAY);
+  tft.setTextDatum(TC_DATUM);
+  tft.drawString("Swipe or tap bottom to close", 120, 255, 1);
+
+  drawBottomNav();
+}
+
+// ═══════════════════════════════════════════════════════════════════
 
 void drawCurrentScreen() {
   switch (currentScreen) {
@@ -3089,6 +3261,9 @@ void drawCurrentScreen() {
     case SCREEN_LINEAR:
       drawLinear();
       break;
+    case SCREEN_RECENT_APPS:
+      drawRecentApps();
+      break;
     default:
       drawHomeScreen();
   }
@@ -3110,15 +3285,62 @@ void handleTouch() {
 
   Serial.printf("Touch at x:%d, y:%d on screen:%d\n", x, y, currentScreen);
 
-  // BOTTOM NAVIGATION BAR - Works on ALL screens except LOCK and HOME
-  // ANY touch in the bottom area goes home! Simple and natural!
-  if (currentScreen != SCREEN_LOCK && currentScreen != SCREEN_HOME) {
-    // Entire bottom area (y >= 270) - SUPER EASY TO TRIGGER!
+  // 🔥 ENHANCED BOTTOM NAVIGATION - Smart back/recent apps buttons!
+  if (currentScreen != SCREEN_LOCK && currentScreen != SCREEN_HOME && currentScreen != SCREEN_RECENT_APPS) {
     if (y >= 270) {
-      Serial.printf("✓ Bottom area touched at x:%d y:%d - Going HOME!\n", x, y);
+      // LEFT BUTTON (10-80, 278-313) - BACK or HOME
+      if (x >= 10 && x <= 80) {
+        playBeep();
+        if (navigationHistoryCount > 0) {
+          // Go back in history
+          currentScreen = popNavigationHistory();
+          Serial.printf("✓ BACK button - returning to screen %d (history depth: %d)\n", currentScreen, navigationHistoryCount);
+        } else {
+          // No history, go home
+          currentScreen = SCREEN_HOME;
+          Serial.println("✓ HOME button - no history");
+        }
+        drawCurrentScreen();
+        return;
+      }
+
+      // RIGHT BUTTON (160-230, 278-313) - RECENT APPS
+      if (x >= 160 && x <= 230) {
+        playBeep();
+        if (recentAppsCount > 1) {
+          currentScreen = SCREEN_RECENT_APPS;
+          Serial.printf("✓ RECENT APPS button - showing %d apps\n", recentAppsCount);
+        } else {
+          currentScreen = SCREEN_HOME;
+          Serial.println("✓ No recent apps - going home");
+        }
+        drawCurrentScreen();
+        return;
+      }
+    }
+  }
+
+  // Recent Apps screen - handle app selection
+  if (currentScreen == SCREEN_RECENT_APPS) {
+    if (y >= 270) {
+      // Bottom nav on recent apps goes back
       playBeep();
-      currentScreen = SCREEN_HOME;
+      currentScreen = popNavigationHistory();
+      if (currentScreen == SCREEN_RECENT_APPS) currentScreen = SCREEN_HOME;
       drawCurrentScreen();
+      return;
+    }
+
+    // App cards are at y=55, 102, 149, 196, 243 (height 42)
+    int cardIndex = (y - 55) / 47;
+    if (cardIndex >= 0 && cardIndex < recentAppsCount && x >= 10 && x <= 230) {
+      Screen selectedScreen = recentApps[cardIndex];
+      if (selectedScreen != currentScreen) {
+        playBeep();
+        currentScreen = selectedScreen;
+        Serial.printf("✓ Switched to recent app: screen %d\n", currentScreen);
+        drawCurrentScreen();
+      }
       return;
     }
   }
@@ -3140,7 +3362,11 @@ void handleTouch() {
           drawAppIcon(apps[i], true);
           delay(100);
 
+          // 🔥 Track navigation
+          pushNavigationHistory(apps[i].screen);
+
           currentScreen = apps[i].screen;
+          Serial.printf("✓ Launched app: screen %d (history depth: %d)\n", currentScreen, navigationHistoryCount);
           drawCurrentScreen();
           break;
         }
