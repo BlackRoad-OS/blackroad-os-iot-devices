@@ -98,10 +98,15 @@ enum Screen {
   SCREEN_KEYBOARD,         // Pop-up QWERTY keyboard (BETTER THAN iPHONE!)
   SCREEN_EMERGENCY_PAGER,  // Emergency Pager - Compliance-grade alerting with touch UI
   SCREEN_ALERT_HISTORY,    // Alert History - View past 10 alerts
-  SCREEN_WEATHER,          // Weather - OpenWeatherMap 5-day forecast
-  SCREEN_GITHUB,           // GitHub - Repo stats, PRs, issues
-  SCREEN_LINEAR,           // Linear - Task tracking integration
-  SCREEN_RECENT_APPS       // 🔥 Recent Apps Switcher (BETTER THAN iPHONE!)
+  SCREEN_WEATHER,          // Weather - OpenStreetMap + sovereign data
+  SCREEN_GITHUB,           // GitHub - Forgejo self-hosted
+  SCREEN_LINEAR,           // Linear - Plane.io self-hosted PM
+  SCREEN_CALENDAR,         // Calendar - Nextcloud CalDAV
+  SCREEN_PAYMENTS,         // Payments - BTCPay Server (Bitcoin)
+  SCREEN_EMAIL,            // Email - Roundcube webmail
+  SCREEN_VIDEO_CHAT,       // Video Chat - Jitsi Meet
+  SCREEN_RECENT_APPS,      // 🔥 Recent Apps Switcher (BETTER THAN iPHONE!)
+  SCREEN_PI_NETWORK        // 🖥️ Raspberry Pi Network Monitor
 };
 
 Screen currentScreen = SCREEN_LOCK;
@@ -148,7 +153,7 @@ App apps[] = {
   {"WX", COLOR_CYBER_BLUE, SCREEN_WEATHER, 20, 270, 45, 0},       // Weather
   {"GIT", COLOR_VIVID_PUR, SCREEN_GITHUB, 75, 270, 45, 5},        // GitHub (5 PRs)
   {"LIN", COLOR_HOT_PINK, SCREEN_LINEAR, 130, 270, 45, 12},       // Linear (12 tasks)
-  {"", COLOR_WHITE, SCREEN_HOME, 185, 270, 45, 0}                 // Empty slot
+  {"PI", COLOR_ELECTRIC_BLUE, SCREEN_PI_NETWORK, 185, 270, 45, 0}  // Pi Network Monitor
 };
 const int APP_COUNT = 20;
 
@@ -441,90 +446,31 @@ bool getTouchCoordinates(int &x, int &y) {
   return false;
 }
 
-// ⚡ BLACKROAD OS BOOT SCREEN - Professional Startup Animation
+// ⚡ BLACKROAD OS BOOT SCREEN - Clean and Simple
 void drawBootScreen() {
   tft.fillScreen(COLOR_BLACK);
 
-  // Animated BlackRoad logo (simulated with circles and text)
-  for (int r = 60; r > 0; r -= 5) {
-    float alpha = (60.0 - r) / 60.0;
-    uint16_t color = brUI.lerpColor(COLOR_HOT_PINK, COLOR_VIVID_PUR, alpha);
-    tft.drawCircle(120, 100, r, color);
-    delay(30);
-  }
-
-  // BlackRoad text (large, centered)
-  tft.setTextColor(COLOR_WHITE);
+  // Simple logo text
   tft.setTextDatum(MC_DATUM);
+  brFont.drawMonoTextCentered("OPERATOR", 120, 120, BR_MONO_LARGE, COLOR_HOT_PINK);
+  brFont.drawMonoTextCentered("by BlackRoad OS, Inc.", 120, 150, BR_MONO_SMALL, COLOR_WHITE);
 
-  // Fade in effect for "BLACKROAD"
-  for (int i = 0; i < 5; i++) {
-    tft.fillCircle(120, 100, 50, COLOR_BLACK);
-    brFont.drawMonoTextCentered("BLACKROAD", 120, 95, BR_MONO_LARGE, COLOR_HOT_PINK);
-    delay(100);
-  }
+  // Simple progress bar
+  int barX = 50;
+  int barY = 180;
+  int barW = 140;
+  int barH = 6;
 
-  // OS text
-  brFont.drawMonoTextCentered("OPERATING SYSTEM", 120, 130, BR_MONO_SMALL, COLOR_SUNRISE);
-
-  // Version with gradient
-  brFont.drawMonoTextCentered("v2.5 QUANTUM", 120, 155, BR_MONO_TINY, COLOR_CYBER_BLUE);
-
-  // Animated progress bar
-  int barX = 40;
-  int barY = 190;
-  int barW = 160;
-  int barH = 8;
-
-  tft.drawRoundRect(barX, barY, barW, barH, 4, COLOR_VIVID_PUR);
-
-  for (int progress = 0; progress <= 100; progress += 5) {
-    int fillW = (barW - 4) * progress / 100;
-
-    // Gradient fill
-    for (int x = 0; x < fillW; x++) {
-      float ratio = (float)x / fillW;
-      uint16_t color = brUI.lerpColor(COLOR_HOT_PINK, COLOR_SUNRISE, ratio);
-      tft.fillRect(barX + 2 + x, barY + 2, 1, barH - 4, color);
+  for (int progress = 0; progress <= 100; progress += 10) {
+    tft.fillRect(barX, barY, barW, barH, COLOR_BLACK);
+    int fillW = (barW * progress) / 100;
+    if (fillW > 0) {
+      tft.fillRect(barX, barY, fillW, barH, COLOR_VIVID_PUR);
     }
-
-    // Progress text
-    tft.fillRect(60, 205, 120, 20, COLOR_BLACK);
-
-    char msg[40];
-    if (progress < 30) {
-      sprintf(msg, "Initializing...");
-    } else if (progress < 60) {
-      sprintf(msg, "Loading UI...");
-    } else if (progress < 90) {
-      sprintf(msg, "Connecting WiFi...");
-    } else {
-      sprintf(msg, "Ready!");
-    }
-
-    tft.setTextColor(COLOR_WHITE);
-    tft.setTextDatum(MC_DATUM);
-    tft.drawString(msg, 120, 215, 2);
-
-    delay(40);
+    delay(80);
   }
 
-  // System info with JetBrains Mono
-  tft.setTextDatum(TC_DATUM);
-  brFont.drawMonoTextCentered("ESP32 @ 240MHz", 120, 245, BR_MONO_TINY, COLOR_CYBER_BLUE);
-  brFont.drawMonoTextCentered("320KB RAM | 4MB Flash", 120, 260, BR_MONO_TINY, COLOR_VIVID_PUR);
-
-  // BlackRoad branding with JetBrains Mono
-  brFont.drawMonoTextCentered("Operator", 120, 275, BR_MONO_SMALL, COLOR_HOT_PINK);
-  brFont.drawMonoTextCentered("by BlackRoad OS, Inc.", 120, 295, BR_MONO_TINY, COLOR_SUNRISE);
-
-  delay(1000);
-
-  // Fade out
-  for (int brightness = 255; brightness >= 0; brightness -= 15) {
-    delay(16);
-  }
-
+  delay(500);
   tft.fillScreen(COLOR_BLACK);
 }
 
@@ -872,9 +818,8 @@ void drawLockScreen() {
   brFont.drawMonoTextCentered("OPERATOR", 120, 200, BR_MONO_MEDIUM, COLOR_HOT_PINK);
   brFont.drawMonoTextCentered("by BlackRoad OS, Inc.", 120, 225, BR_MONO_TINY, COLOR_WHITE);
 
-  // Unlock button
-  tft.drawRoundRect(50, 270, 140, 38, 19, COLOR_VIVID_PUR);
-  brFont.drawMonoTextCentered("TAP TO UNLOCK", 120, 289, BR_MONO_SMALL, COLOR_WHITE);
+  // Unlock text
+  brFont.drawMonoTextCentered("TAP TO UNLOCK", 120, 280, BR_MONO_SMALL, COLOR_WHITE);
 
   // Status indicators (top corners)
   if (WiFi.status() == WL_CONNECTED) {
@@ -888,33 +833,50 @@ void drawHomeScreen() {
   tft.fillScreen(COLOR_BLACK);
   drawStatusBar();
 
-  // Simple app grid - 4 columns x 5 rows
-  int iconSize = 48;
-  int spacing = 12;
-  int startX = 18;
-  int startY = 35;
+  // Perfect 3x3 grid = 9 apps max per screen
+  int iconSize = 64;
+  int cols = 3;
+  int rows = 3;
+  int textHeight = 16;
+
+  // Screen: 240w x 320h, Status: 20h, Nav: 50h
+  // Content area: 20 to 270 = 250px height
+  int contentWidth = 240;
+  int contentHeight = 250;
+  int contentTop = 20;
+
+  // Total grid dimensions including text
+  int cellHeight = iconSize + textHeight;
+  int totalWidth = cols * iconSize;
+  int totalHeight = rows * cellHeight;
+
+  // Calculate gaps to perfectly center
+  int hGap = (contentWidth - totalWidth) / (cols + 1);
+  int vGap = (contentHeight - totalHeight) / (rows + 1);
 
   int appIndex = 0;
-  for (int row = 0; row < 5; row++) {
-    for (int col = 0; col < 4; col++) {
-      if (appIndex < APP_COUNT && strlen(apps[appIndex].name) > 0) {
-        int x = startX + (col * (iconSize + spacing));
-        int y = startY + (row * (iconSize + spacing + 18));
+  for (int row = 0; row < rows; row++) {
+    for (int col = 0; col < cols; col++) {
+      if (appIndex < 9 && appIndex < APP_COUNT && strlen(apps[appIndex].name) > 0) {
+        // Calculate center position for this cell
+        int centerX = hGap + (col * (iconSize + hGap)) + iconSize/2;
+        int topY = contentTop + vGap + (row * (cellHeight + vGap));
+        int centerY = topY + iconSize/2;
 
         // Simple colored circle
-        tft.fillCircle(x + iconSize/2, y + iconSize/2, iconSize/2, apps[appIndex].color);
-        tft.drawCircle(x + iconSize/2, y + iconSize/2, iconSize/2, COLOR_WHITE);
+        tft.fillCircle(centerX, centerY, iconSize/2, apps[appIndex].color);
+        tft.drawCircle(centerX, centerY, iconSize/2, COLOR_WHITE);
 
         // White app name below
         tft.setTextDatum(TC_DATUM);
         tft.setTextColor(COLOR_WHITE);
-        tft.drawString(apps[appIndex].name, x + iconSize/2, y + iconSize + 4, 1);
+        tft.drawString(apps[appIndex].name, centerX, topY + iconSize + 2, 1);
 
         // Badge
         if (apps[appIndex].badge > 0) {
-          int badgeX = x + iconSize - 8;
-          int badgeY = y + 8;
-          tft.fillCircle(badgeX, badgeY, 8, COLOR_HOT_PINK);
+          int badgeX = centerX + iconSize/2 - 10;
+          int badgeY = centerY - iconSize/2 + 10;
+          tft.fillCircle(badgeX, badgeY, 9, COLOR_HOT_PINK);
           tft.setTextDatum(MC_DATUM);
           tft.setTextColor(COLOR_WHITE);
           if (apps[appIndex].badge < 10) {
@@ -3348,7 +3310,345 @@ void drawWeather() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// GITHUB INTEGRATION - Repo Stats, PRs, Issues
+// CALENDAR APP - Nextcloud CalDAV Integration (SOVEREIGN STACK!)
+// ═══════════════════════════════════════════════════════════════════
+
+void drawCalendar() {
+  tft.fillScreen(COLOR_BLACK);
+  drawStatusBar();
+
+  // Title with Nextcloud integration + sovereign indicator
+  tft.fillRoundRect(0, 20, 240, 35, 0, COLOR_DARK_GRAY);
+  for (int i = 0; i < 18; i++) {
+    float t = i / 18.0;
+    uint16_t c = brUI.lerpColor(COLOR_VIVID_PUR, COLOR_HOT_PINK, t);
+    tft.drawFastHLine(0, 20 + i, 240, c);
+  }
+
+  tft.setTextDatum(MC_DATUM);
+  brFont.drawMonoTextCentered("CALENDAR", 120, 27, BR_MONO_MEDIUM, COLOR_WHITE);
+
+  // Nextcloud badge
+  tft.fillCircle(205, 29, 3, COLOR_SUNRISE);
+  tft.setTextColor(COLOR_SUNRISE);
+  tft.setTextSize(1);
+  tft.drawString("NC", 220, 27, 1);
+
+  int y = 45;
+
+  // Today's date card
+  tft.fillRoundRect(10, y, 220, 35, 6, COLOR_DARK_GRAY);
+  tft.drawRoundRect(10, y, 220, 35, 6, COLOR_VIVID_PUR);
+
+  tft.setTextDatum(TL_DATUM);
+  brFont.drawMonoText("Today", 16, y+6, BR_MONO_TINY, COLOR_VIVID_PUR);
+  tft.setTextColor(COLOR_WHITE);
+  tft.drawString("Friday, January 3", 16, y+18, 2);
+
+  // Sync indicator
+  tft.fillCircle(218, y+18, 3, COLOR_SUNRISE);
+
+  // Upcoming events
+  y += 40;
+  tft.setTextColor(COLOR_AMBER);
+  tft.setTextDatum(TL_DATUM);
+  tft.drawString("UPCOMING EVENTS:", 10, y, 1);
+
+  y += 14;
+  const char* events[4] = {"Team Standup", "Deploy Review", "1:1 with Alexa", "Project Demo"};
+  const char* times[4] = {"9:00 AM", "11:30 AM", "2:00 PM", "4:00 PM"};
+  uint16_t eventColors[4] = {COLOR_CYBER_BLUE, COLOR_HOT_PINK, COLOR_VIVID_PUR, COLOR_SUNRISE};
+
+  for (int i = 0; i < 4; i++) {
+    tft.fillRoundRect(10, y, 220, 28, 4, COLOR_DARK_GRAY);
+    tft.drawRoundRect(10, y, 220, 28, 4, eventColors[i]);
+
+    tft.setTextDatum(TL_DATUM);
+    brFont.drawMonoText(times[i], 16, y+6, BR_MONO_TINY, eventColors[i]);
+    tft.setTextColor(COLOR_WHITE);
+    tft.drawString(events[i], 16, y+16, 1);
+
+    // Calendar indicator dot
+    tft.fillCircle(218, y+14, 3, eventColors[i]);
+
+    y += 32;
+  }
+
+  // Nextcloud sync status
+  y += 5;
+  tft.setTextColor(COLOR_DARK_GRAY);
+  tft.setTextDatum(TC_DATUM);
+  tft.drawString("CalDAV sync: cloud.blackroad.io", 120, y, 1);
+
+  drawBottomNav();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PAYMENTS APP - BTCPay Server (BITCOIN SOVEREIGN!)
+// ═══════════════════════════════════════════════════════════════════
+
+void drawPayments() {
+  tft.fillScreen(COLOR_BLACK);
+  drawStatusBar();
+
+  // Title with Bitcoin + sovereign indicator
+  tft.fillRoundRect(0, 20, 240, 35, 0, COLOR_DARK_GRAY);
+  for (int i = 0; i < 18; i++) {
+    float t = i / 18.0;
+    uint16_t c = brUI.lerpColor(COLOR_SUNRISE, COLOR_AMBER, t);
+    tft.drawFastHLine(0, 20 + i, 240, c);
+  }
+
+  tft.setTextDatum(MC_DATUM);
+  brFont.drawMonoTextCentered("PAYMENTS", 120, 27, BR_MONO_MEDIUM, COLOR_WHITE);
+
+  // BTC badge
+  tft.fillCircle(205, 29, 3, COLOR_SUNRISE);
+  tft.setTextColor(COLOR_SUNRISE);
+  tft.setTextSize(1);
+  tft.drawString("BTC", 223, 27, 1);
+
+  int y = 45;
+
+  // Bitcoin wallet card
+  tft.fillRoundRect(10, y, 220, 45, 6, COLOR_DARK_GRAY);
+  tft.drawRoundRect(10, y, 220, 45, 6, COLOR_SUNRISE);
+
+  tft.setTextDatum(TL_DATUM);
+  brFont.drawMonoText("Bitcoin Wallet", 16, y+6, BR_MONO_TINY, COLOR_SUNRISE);
+
+  // BTC balance
+  tft.setTextColor(COLOR_WHITE);
+  tft.drawString("0.1234", 20, y+18, 4);
+  tft.setTextColor(COLOR_AMBER);
+  tft.drawString("BTC", 95, y+25, 2);
+
+  // USD value
+  tft.setTextColor(COLOR_WHITE);
+  tft.setTextDatum(TR_DATUM);
+  tft.drawString("$4,567", 224, y+25, 2);
+
+  // Recent transactions
+  y += 50;
+  tft.setTextColor(COLOR_AMBER);
+  tft.setTextDatum(TL_DATUM);
+  tft.drawString("RECENT TRANSACTIONS:", 10, y, 1);
+
+  y += 14;
+  const char* txTypes[3] = {"Received", "Sent", "Received"};
+  const char* txAmounts[3] = {"+0.005", "-0.012", "+0.008"};
+  const char* txDates[3] = {"2 hrs ago", "1 day ago", "3 days ago"};
+  uint16_t txColors[3] = {COLOR_SUNRISE, COLOR_HOT_PINK, COLOR_SUNRISE};
+
+  for (int i = 0; i < 3; i++) {
+    tft.fillRoundRect(10, y, 220, 26, 4, COLOR_DARK_GRAY);
+    tft.drawRoundRect(10, y, 220, 26, 4, txColors[i]);
+
+    tft.setTextDatum(TL_DATUM);
+    brFont.drawMonoText(txTypes[i], 16, y+5, BR_MONO_TINY, txColors[i]);
+    tft.setTextColor(COLOR_WHITE);
+    tft.drawString(txAmounts[i], 16, y+15, 1);
+
+    tft.setTextColor(COLOR_DARK_GRAY);
+    tft.setTextDatum(TR_DATUM);
+    tft.drawString(txDates[i], 224, y+15, 1);
+
+    y += 30;
+  }
+
+  // BTCPay Server status
+  y += 5;
+  tft.setTextColor(COLOR_DARK_GRAY);
+  tft.setTextDatum(TC_DATUM);
+  tft.drawString("BTCPay: btc.blackroad.io", 120, y, 1);
+
+  drawBottomNav();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// EMAIL APP - Roundcube Webmail (SOVEREIGN STACK!)
+// ═══════════════════════════════════════════════════════════════════
+
+void drawEmail() {
+  tft.fillScreen(COLOR_BLACK);
+  drawStatusBar();
+
+  // Title with Roundcube + sovereign indicator
+  tft.fillRoundRect(0, 20, 240, 35, 0, COLOR_DARK_GRAY);
+  for (int i = 0; i < 18; i++) {
+    float t = i / 18.0;
+    uint16_t c = brUI.lerpColor(COLOR_CYBER_BLUE, COLOR_VIVID_PUR, t);
+    tft.drawFastHLine(0, 20 + i, 240, c);
+  }
+
+  tft.setTextDatum(MC_DATUM);
+  brFont.drawMonoTextCentered("EMAIL", 120, 27, BR_MONO_MEDIUM, COLOR_WHITE);
+
+  // Compose button
+  tft.fillRoundRect(195, 23, 38, 22, 4, COLOR_HOT_PINK);
+  tft.setTextColor(COLOR_WHITE);
+  tft.setTextSize(1);
+  tft.drawString("+", 214, 34, 2);
+
+  int y = 48;
+
+  // Inbox stats
+  tft.fillRoundRect(10, y, 220, 16, 8, COLOR_DARK_GRAY);
+  tft.drawRoundRect(10, y, 220, 16, 8, COLOR_CYBER_BLUE);
+
+  tft.setTextDatum(MC_DATUM);
+  tft.setTextColor(COLOR_SUNRISE);
+  tft.drawString("47", 40, y+8, 1);
+  tft.setTextColor(COLOR_WHITE);
+  tft.drawString("msgs", 65, y+8, 1);
+
+  tft.setTextColor(COLOR_HOT_PINK);
+  tft.drawString("5", 120, y+8, 1);
+  tft.setTextColor(COLOR_WHITE);
+  tft.drawString("unread", 145, y+8, 1);
+
+  tft.setTextColor(COLOR_CYBER_BLUE);
+  tft.drawString("IMAP", 205, y+8, 1);
+
+  // Email list
+  y += 22;
+  tft.setTextColor(COLOR_AMBER);
+  tft.setTextDatum(TL_DATUM);
+  tft.drawString("INBOX:", 10, y, 1);
+
+  y += 14;
+  const char* senders[4] = {"GitHub", "Linear", "Alexa", "Team"};
+  const char* subjects[4] = {"PR merged #847", "Task updated", "Meeting notes", "Deploy ready"};
+  const char* emailTimes[4] = {"2m", "15m", "1h", "3h"};
+  bool unread[4] = {true, true, false, false};
+  uint16_t emailColors[4] = {COLOR_VIVID_PUR, COLOR_HOT_PINK, COLOR_CYBER_BLUE, COLOR_SUNRISE};
+
+  for (int i = 0; i < 4; i++) {
+    tft.fillRoundRect(10, y, 220, 24, 4, COLOR_DARK_GRAY);
+    tft.drawRoundRect(10, y, 220, 24, 4, emailColors[i]);
+
+    // Unread indicator
+    if (unread[i]) {
+      tft.fillCircle(18, y+12, 3, emailColors[i]);
+      tft.fillCircle(18, y+12, 1, COLOR_WHITE);
+    }
+
+    tft.setTextDatum(TL_DATUM);
+    brFont.drawMonoText(senders[i], 28, y+5, BR_MONO_TINY, emailColors[i]);
+    tft.setTextColor(COLOR_WHITE);
+    tft.drawString(subjects[i], 28, y+14, 1);
+
+    tft.setTextColor(COLOR_DARK_GRAY);
+    tft.setTextDatum(TR_DATUM);
+    tft.drawString(emailTimes[i], 224, y+14, 1);
+
+    y += 28;
+  }
+
+  // Roundcube status
+  y += 5;
+  tft.setTextColor(COLOR_DARK_GRAY);
+  tft.setTextDatum(TC_DATUM);
+  tft.drawString("Roundcube: mail.blackroad.io", 120, y, 1);
+
+  drawBottomNav();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// VIDEO CHAT APP - Jitsi Meet (SOVEREIGN STACK!)
+// ═══════════════════════════════════════════════════════════════════
+
+void drawVideoChat() {
+  tft.fillScreen(COLOR_BLACK);
+  drawStatusBar();
+
+  // Title with Jitsi + sovereign indicator
+  tft.fillRoundRect(0, 20, 240, 35, 0, COLOR_DARK_GRAY);
+  for (int i = 0; i < 18; i++) {
+    float t = i / 18.0;
+    uint16_t c = brUI.lerpColor(COLOR_HOT_PINK, COLOR_MAGENTA, t);
+    tft.drawFastHLine(0, 20 + i, 240, c);
+  }
+
+  tft.setTextDatum(MC_DATUM);
+  brFont.drawMonoTextCentered("VIDEO CHAT", 120, 27, BR_MONO_MEDIUM, COLOR_WHITE);
+
+  // Jitsi badge
+  tft.fillCircle(200, 29, 3, COLOR_SUNRISE);
+  tft.setTextColor(COLOR_SUNRISE);
+  tft.setTextSize(1);
+  tft.drawString("JITSI", 225, 27, 1);
+
+  int y = 50;
+
+  // Active meeting card
+  tft.fillRoundRect(10, y, 220, 55, 6, COLOR_DARK_GRAY);
+  tft.drawRoundRect(10, y, 220, 55, 6, COLOR_HOT_PINK);
+
+  tft.setTextDatum(TL_DATUM);
+  brFont.drawMonoText("Active Meeting", 16, y+6, BR_MONO_TINY, COLOR_HOT_PINK);
+
+  tft.setTextColor(COLOR_WHITE);
+  tft.drawString("BlackRoad Standup", 20, y+20, 2);
+
+  // Participants
+  tft.setTextColor(COLOR_AMBER);
+  tft.drawString("4 participants", 20, y+38, 1);
+
+  // Join button
+  tft.fillRoundRect(140, y+32, 75, 18, 4, COLOR_SUNRISE);
+  tft.setTextColor(COLOR_BLACK);
+  tft.setTextDatum(MC_DATUM);
+  tft.drawString("JOIN", 177, y+41, 1);
+
+  // Quick start meeting
+  y += 65;
+  tft.fillRoundRect(10, y, 220, 35, 6, COLOR_DARK_GRAY);
+  tft.drawRoundRect(10, y, 220, 35, 6, COLOR_VIVID_PUR);
+
+  tft.setTextDatum(TL_DATUM);
+  brFont.drawMonoText("Quick Start", 16, y+6, BR_MONO_TINY, COLOR_VIVID_PUR);
+  tft.setTextColor(COLOR_WHITE);
+  tft.drawString("Start instant meeting", 20, y+20, 1);
+
+  // Recent meetings
+  y += 42;
+  tft.setTextColor(COLOR_AMBER);
+  tft.drawString("RECENT MEETINGS:", 10, y, 1);
+
+  y += 14;
+  const char* meetings[3] = {"Team Sprint", "Design Review", "1:1 Session"};
+  const char* meetingTimes[3] = {"2 hrs ago", "Yesterday", "2 days ago"};
+  uint16_t meetingColors[3] = {COLOR_CYBER_BLUE, COLOR_VIVID_PUR, COLOR_HOT_PINK};
+
+  for (int i = 0; i < 3; i++) {
+    tft.fillRoundRect(10, y, 220, 24, 4, COLOR_DARK_GRAY);
+    tft.drawRoundRect(10, y, 220, 24, 4, meetingColors[i]);
+
+    tft.setTextDatum(TL_DATUM);
+    brFont.drawMonoText(meetings[i], 16, y+5, BR_MONO_TINY, meetingColors[i]);
+
+    tft.setTextColor(COLOR_DARK_GRAY);
+    tft.setTextDatum(TR_DATUM);
+    tft.drawString(meetingTimes[i], 224, y+13, 1);
+
+    // Replay icon
+    tft.setTextColor(meetingColors[i]);
+    tft.drawString("↻", 16, y+14, 1);
+
+    y += 28;
+  }
+
+  // Jitsi server status
+  tft.setTextColor(COLOR_DARK_GRAY);
+  tft.setTextDatum(TC_DATUM);
+  tft.drawString("Jitsi: meet.blackroad.io", 120, y+5, 1);
+
+  drawBottomNav();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// GITHUB INTEGRATION - Forgejo Self-Hosted (SOVEREIGN STACK!)
 // ═══════════════════════════════════════════════════════════════════
 
 void drawGitHub() {
@@ -3600,6 +3900,73 @@ void drawRecentApps() {
   drawBottomNav();
 }
 
+// Raspberry Pi Network Monitor Screen
+void drawPiNetworkScreen() {
+  tft.fillScreen(COLOR_BLACK);
+
+  // Header
+  brFont.drawMonoText("PI NETWORK", 10, 10, BR_MONO_MEDIUM, COLOR_HOT_PINK);
+  brFont.drawMonoText("MONITOR", 10, 30, BR_MONO_MEDIUM, COLOR_HOT_PINK);
+
+  // Scan button
+  tft.fillRoundRect(180, 10, 50, 30, 5, COLOR_ELECTRIC_BLUE);
+  brFont.drawMonoText("SCAN", 185, 17, BR_MONO_SMALL, COLOR_WHITE);
+
+  tft.drawLine(0, 50, 240, 50, COLOR_AMBER);
+
+  int y = 60;
+
+  // OCTAVIA (ONLINE)
+  brFont.drawMonoText("OCTAVIA", 10, y, BR_MONO_SMALL, COLOR_WHITE);
+  brFont.drawMonoText("192.168.4.38", 10, y+12, BR_MONO_TINY, COLOR_AMBER);
+  tft.fillCircle(220, y+5, 4, COLOR_CYBER_BLUE);  // ✅ indicator
+
+  brFont.drawMonoText("  Dash :3000", 10, y+24, BR_MONO_TINY, COLOR_WHITE);
+  brFont.drawMonoText("  vLLM :8000", 10, y+34, BR_MONO_TINY, COLOR_WHITE);
+  brFont.drawMonoText("  Svcs x3", 10, y+44, BR_MONO_TINY, COLOR_WHITE);
+  y += 60;
+
+  // ALICE (ONLINE)
+  brFont.drawMonoText("ALICE", 10, y, BR_MONO_SMALL, COLOR_WHITE);
+  brFont.drawMonoText("192.168.4.49", 10, y+12, BR_MONO_TINY, COLOR_AMBER);
+  tft.fillCircle(220, y+5, 4, COLOR_CYBER_BLUE);
+
+  brFont.drawMonoText("  SSH :22", 10, y+24, BR_MONO_TINY, COLOR_WHITE);
+  y += 40;
+
+  // ARIA (ONLINE)
+  brFont.drawMonoText("ARIA", 10, y, BR_MONO_SMALL, COLOR_WHITE);
+  brFont.drawMonoText("192.168.4.27", 10, y+12, BR_MONO_TINY, COLOR_AMBER);
+  tft.fillCircle(220, y+5, 4, COLOR_CYBER_BLUE);
+
+  brFont.drawMonoText("  Svc :5000", 10, y+24, BR_MONO_TINY, COLOR_WHITE);
+  brFont.drawMonoText("  TIMEOUT", 10, y+34, BR_MONO_TINY, COLOR_ORANGE);
+  y += 50;
+
+  // BLACKROAD-PI (OFFLINE)
+  brFont.drawMonoText("BLACKROAD", 10, y, BR_MONO_SMALL, COLOR_DEEP_MAG);
+  brFont.drawMonoText("192.168.4.64", 10, y+12, BR_MONO_TINY, COLOR_DEEP_MAG);
+  tft.fillCircle(220, y+5, 4, COLOR_DEEP_MAG);  // ❌ indicator
+  brFont.drawMonoText("  OFFLINE", 10, y+24, BR_MONO_TINY, COLOR_DEEP_MAG);
+  y += 40;
+
+  // LUCIDIA (OFFLINE)
+  brFont.drawMonoText("LUCIDIA", 10, y, BR_MONO_SMALL, COLOR_DEEP_MAG);
+  brFont.drawMonoText("192.168.4.99", 10, y+12, BR_MONO_TINY, COLOR_DEEP_MAG);
+  tft.fillCircle(220, y+5, 4, COLOR_DEEP_MAG);
+  brFont.drawMonoText("  OFFLINE", 10, y+24, BR_MONO_TINY, COLOR_DEEP_MAG);
+
+  // Footer
+  tft.drawLine(0, 270, 240, 270, COLOR_AMBER);
+  brFont.drawMonoText("3/5 ONLINE (60%)", 10, 278, BR_MONO_SMALL, COLOR_CYBER_BLUE);
+
+  // Refresh button
+  tft.fillRoundRect(160, 275, 70, 25, 5, COLOR_HOT_PINK);
+  brFont.drawMonoText("REFRESH", 165, 280, BR_MONO_TINY, COLOR_WHITE);
+
+  drawBottomNav();
+}
+
 // ═══════════════════════════════════════════════════════════════════
 
 void drawCurrentScreen() {
@@ -3672,6 +4039,18 @@ void drawCurrentScreen() {
       break;
     case SCREEN_WEATHER:
       drawWeather();
+      break;
+    case SCREEN_CALENDAR:
+      drawCalendar();
+      break;
+    case SCREEN_PAYMENTS:
+      drawPayments();
+      break;
+    case SCREEN_EMAIL:
+      drawEmail();
+      break;
+    case SCREEN_VIDEO_CHAT:
+      drawVideoChat();
       break;
     case SCREEN_GITHUB:
       drawGitHub();
