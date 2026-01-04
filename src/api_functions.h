@@ -657,6 +657,7 @@ bool fetchLinearTasks(const char* apiKey, const char* userEmail) {
  * ═══════════════════════════════════════════════════════════════════════
  */
 
+#ifndef DISABLE_SPIFFS_PERSISTENCE
 #include <SPIFFS.h>
 
 struct Customer {
@@ -925,5 +926,7 @@ bool loadIntegrationStats() {
   Serial.println("✅ Loaded integration statistics from previous session");
   return true;
 }
+
+#endif  // DISABLE_SPIFFS_PERSISTENCE
 
 #endif // API_FUNCTIONS_H

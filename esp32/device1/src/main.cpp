@@ -19,6 +19,19 @@
 #include <ArduinoJson.h>
 #include <base64.h>
 
+// Forward declarations
+void printHeader();
+void connectWiFi();
+void verifyNATSServer();
+bool connectNATS();
+void publishDeviceStatus();
+void publishHeartbeat();
+void publishSensorData();
+void processNATSMessage();
+String readLine();
+void subscribeToCommands();
+void handleCommand(String payload);
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // CONFIGURATION - UPDATE THESE VALUES
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
