@@ -855,103 +855,80 @@ void drawNotificationDot(int x, int y, int count) {
 void drawLockScreen() {
   tft.fillScreen(COLOR_BLACK);
 
-  // Gradient background effect (subtle radial)
-  for (int y = 0; y < 320; y += 4) {
-    float dist = abs(y - 160) / 160.0;
-    uint16_t c = brUI.lerpColor(COLOR_DARK_GRAY, COLOR_BLACK, dist);
-    tft.fillRect(0, y, 240, 4, c);
-  }
-
   // Professional time display (large, centered)
   unsigned long mins = (millis() / 60000) % 60;
   unsigned long hrs = (millis() / 3600000) % 24;
   char timeStr[10];
   sprintf(timeStr, "%02lu:%02lu", hrs, mins);
 
-  // Time with gradient glow effect
   tft.setTextDatum(MC_DATUM);
-
-  // Glow layers
-  for (int i = 3; i > 0; i--) {
-    uint16_t glowColor = brUI.lerpColor(COLOR_HOT_PINK, COLOR_BLACK, i * 0.25);
-    brFont.drawMonoTextCentered(timeStr, 120 + i, 90 + i, BR_MONO_HUGE, glowColor);
-  }
-
-  // Main time
   brFont.drawMonoTextCentered(timeStr, 120, 90, BR_MONO_HUGE, COLOR_WHITE);
 
-  // Date with beautiful styling
-  brFont.drawMonoTextCentered("Friday", 120, 140, BR_MONO_SMALL, COLOR_SUNRISE);
-  brFont.drawMonoTextCentered("January 3, 2026", 120, 160, BR_MONO_TINY, COLOR_VIVID_PUR);
+  // Date
+  brFont.drawMonoTextCentered("Friday", 120, 140, BR_MONO_SMALL, COLOR_WHITE);
+  brFont.drawMonoTextCentered("January 3, 2026", 120, 160, BR_MONO_TINY, COLOR_WHITE);
 
-  // Elegant divider line with gradient
-  for (int x = 0; x < 160; x++) {
-    float t = x / 160.0;
-    uint16_t c = brUI.lerpColor(COLOR_BLACK, COLOR_HOT_PINK, sin(t * 3.14) * 0.8);
-    tft.drawFastVLine(40 + x, 178, 2, c);
-  }
+  // Operator branding
+  brFont.drawMonoTextCentered("OPERATOR", 120, 200, BR_MONO_MEDIUM, COLOR_HOT_PINK);
+  brFont.drawMonoTextCentered("by BlackRoad OS, Inc.", 120, 225, BR_MONO_TINY, COLOR_WHITE);
 
-  // Operator branding card with gradient border
-  int cardY = 195;
-  tft.fillRoundRect(30, cardY, 180, 55, 12, COLOR_DARK_GRAY);
+  // Unlock button
+  tft.drawRoundRect(50, 270, 140, 38, 19, COLOR_VIVID_PUR);
+  brFont.drawMonoTextCentered("TAP TO UNLOCK", 120, 289, BR_MONO_SMALL, COLOR_WHITE);
 
-  // Gradient border
-  for (int i = 0; i < 3; i++) {
-    float t = i / 3.0;
-    uint16_t c = brUI.lerpColor(COLOR_HOT_PINK, COLOR_VIVID_PUR, t);
-    tft.drawRoundRect(30 - i, cardY - i, 180 + i*2, 55 + i*2, 12, c);
-  }
-
-  brFont.drawMonoTextCentered("OPERATOR", 120, cardY + 15, BR_MONO_MEDIUM, COLOR_HOT_PINK);
-  brFont.drawMonoTextCentered("by BlackRoad OS, Inc.", 120, cardY + 35, BR_MONO_TINY, COLOR_CYBER_BLUE);
-
-  // Unlock button with gradient
-  int btnY = 270;
-  tft.fillRoundRect(50, btnY, 140, 38, 19, COLOR_DARK_GRAY);
-
-  // Gradient fill for button
-  for (int y = 0; y < 38; y++) {
-    float t = y / 38.0;
-    uint16_t c = brUI.lerpColor(COLOR_VIVID_PUR, COLOR_HOT_PINK, t);
-    tft.drawFastHLine(51, btnY + y, 138, c);
-  }
-
-  brFont.drawMonoTextCentered("TAP TO UNLOCK", 120, btnY + 19, BR_MONO_SMALL, COLOR_WHITE);
-
-  // Status indicators (top corners - elegant)
+  // Status indicators (top corners)
   if (WiFi.status() == WL_CONNECTED) {
-    tft.fillCircle(15, 15, 5, COLOR_CYBER_BLUE);
-    tft.fillCircle(15, 15, 3, COLOR_WHITE);
+    tft.fillCircle(15, 15, 4, COLOR_CYBER_BLUE);
   }
   tft.setTextDatum(TR_DATUM);
-  brFont.drawMonoText("100%", 220, 10, BR_MONO_TINY, COLOR_SUNRISE);
+  brFont.drawMonoText("100%", 220, 10, BR_MONO_TINY, COLOR_WHITE);
 }
 
 void drawHomeScreen() {
   tft.fillScreen(COLOR_BLACK);
   drawStatusBar();
 
-  // Professional header - PORTRAIT MODE (240 wide)
-  tft.fillRect(0, 20, 240, 30, COLOR_DARK_GRAY);
-  tft.setTextColor(COLOR_HOT_PINK);
-  tft.setTextDatum(TL_DATUM);
-  brFont.drawMonoText("OPERATOR", 10, 27, BR_MONO_SMALL, COLOR_HOT_PINK);
+  // Simple app grid - 4 columns x 5 rows
+  int iconSize = 48;
+  int spacing = 12;
+  int startX = 18;
+  int startY = 35;
 
-  // Version badge (small, professional)
-  tft.setTextColor(COLOR_CYBER_BLUE);
-  tft.setTextDatum(TR_DATUM);
-  brFont.drawMonoText("v2.4", 200, 32, BR_MONO_TINY, COLOR_CYBER_BLUE);
+  int appIndex = 0;
+  for (int row = 0; row < 5; row++) {
+    for (int col = 0; col < 4; col++) {
+      if (appIndex < APP_COUNT && strlen(apps[appIndex].name) > 0) {
+        int x = startX + (col * (iconSize + spacing));
+        int y = startY + (row * (iconSize + spacing + 18));
 
-  // Draw app icons in professional 4x5 grid (17 apps + space)
-  // Updated positions for portrait mode 240x320
-  for (int i = 0; i < APP_COUNT; i++) {
-    if (strlen(apps[i].name) > 0) {
-      drawAppIcon(apps[i]);
+        // Simple colored circle
+        tft.fillCircle(x + iconSize/2, y + iconSize/2, iconSize/2, apps[appIndex].color);
+        tft.drawCircle(x + iconSize/2, y + iconSize/2, iconSize/2, COLOR_WHITE);
+
+        // White app name below
+        tft.setTextDatum(TC_DATUM);
+        tft.setTextColor(COLOR_WHITE);
+        tft.drawString(apps[appIndex].name, x + iconSize/2, y + iconSize + 4, 1);
+
+        // Badge
+        if (apps[appIndex].badge > 0) {
+          int badgeX = x + iconSize - 8;
+          int badgeY = y + 8;
+          tft.fillCircle(badgeX, badgeY, 8, COLOR_HOT_PINK);
+          tft.setTextDatum(MC_DATUM);
+          tft.setTextColor(COLOR_WHITE);
+          if (apps[appIndex].badge < 10) {
+            tft.drawString(String(apps[appIndex].badge), badgeX, badgeY, 1);
+          } else {
+            tft.drawString("9+", badgeX, badgeY, 1);
+          }
+        }
+      }
+      appIndex++;
     }
   }
 
-  // Page indicator dots (bottom, professional)
-  tft.fillCircle(120, 310, 3, COLOR_WHITE);
+  drawBottomNav();
 }
 
 void drawAIInference() {
@@ -3251,33 +3228,79 @@ void drawAlertHistory() {
 void drawWeather() {
   tft.fillScreen(COLOR_BLACK);
   drawStatusBar();
-  drawBackButton();
 
-  // Title
-  tft.setTextColor(COLOR_CYBER_BLUE);
-  tft.setTextDatum(TC_DATUM);
-  brFont.drawMonoText("WEATHER", 160, 28, BR_MONO_MEDIUM, COLOR_CYBER_BLUE);
+  // Title with OpenStreetMap integration + sovereign indicator
+  tft.fillRoundRect(0, 20, 240, 35, 0, COLOR_DARK_GRAY);
+  for (int i = 0; i < 18; i++) {
+    float t = i / 18.0;
+    uint16_t c = brUI.lerpColor(COLOR_CYBER_BLUE, COLOR_VIVID_PUR, t);
+    tft.drawFastHLine(0, 20 + i, 240, c);
+  }
 
-  // Current weather card
-  drawCard(10, 50, 220, 80);
+  tft.setTextDatum(MC_DATUM);
+  brFont.drawMonoTextCentered("WEATHER", 120, 27, BR_MONO_MEDIUM, COLOR_WHITE);
 
-  // Location & temp
-  tft.setTextColor(COLOR_WHITE);
+  // Sovereign data source indicator
+  tft.fillCircle(210, 29, 3, COLOR_SUNRISE);
+  tft.setTextColor(COLOR_SUNRISE);
+  tft.setTextSize(1);
+  tft.drawString("OSM", 225, 27, 1);
+
+  int y = 45;
+
+  // Location card with OpenStreetMap data
+  tft.fillRoundRect(10, y, 220, 28, 6, COLOR_DARK_GRAY);
+  tft.drawRoundRect(10, y, 220, 28, 6, COLOR_VIVID_PUR);
+
   tft.setTextDatum(TL_DATUM);
-  tft.drawString("San Francisco, CA", 20, 58, 1);
-
-  tft.setTextColor(COLOR_CYBER_BLUE);
-  tft.drawString("72°F", 20, 78, 1);
-
+  brFont.drawMonoText("Location", 16, y+5, BR_MONO_TINY, COLOR_VIVID_PUR);
   tft.setTextColor(COLOR_WHITE);
-  tft.drawString("Partly Cloudy", 20, 108, 1);
+  tft.drawString("Minnesota Wilderness", 16, y+16, 1);
+  tft.setTextColor(COLOR_AMBER);
+  tft.setTextDatum(TR_DATUM);
+  tft.drawString("46.2N", 224, y+16, 1);
 
-  // Weather details
-  tft.setTextColor(COLOR_DARK_GRAY);
-  tft.drawString("Humidity: 65%", 180, 68, 1);
-  tft.drawString("Wind: 12 mph NW", 180, 83, 1);
-  tft.drawString("UV Index: 6", 180, 98, 1);
-  tft.drawString("Feels: 70°F", 180, 113, 1);
+  // Current conditions card
+  y += 33;
+  tft.fillRoundRect(10, y, 220, 50, 6, COLOR_DARK_GRAY);
+  tft.drawRoundRect(10, y, 220, 50, 6, COLOR_CYBER_BLUE);
+
+  tft.setTextDatum(TL_DATUM);
+  brFont.drawMonoText("Current", 16, y+5, BR_MONO_TINY, COLOR_CYBER_BLUE);
+
+  // Temperature (large)
+  tft.setTextColor(COLOR_SUNRISE);
+  tft.drawString("28", 20, y+18, 4);
+  tft.drawString("°F", 60, y+18, 2);
+
+  // Conditions
+  tft.setTextColor(COLOR_WHITE);
+  tft.drawString("Partly Cloudy", 100, y+20, 1);
+  tft.setTextColor(COLOR_AMBER);
+  tft.drawString("Feels 25°F", 100, y+32, 1);
+
+  // Status dot
+  tft.fillCircle(218, y+25, 3, COLOR_SUNRISE);
+
+  // Weather metrics grid
+  y += 55;
+  const char* metrics[4] = {"Humid", "Wind", "UV", "Press"};
+  const char* values[4] = {"65%", "12mph", "2", "1013"};
+  uint16_t mColors[4] = {COLOR_CYBER_BLUE, COLOR_HOT_PINK, COLOR_SUNRISE, COLOR_VIVID_PUR};
+
+  for (int i = 0; i < 4; i++) {
+    int x = 10 + (i%2)*110;
+    int cardY = y + (i/2)*28;
+
+    tft.fillRoundRect(x, cardY, 105, 24, 4, COLOR_DARK_GRAY);
+    tft.drawRoundRect(x, cardY, 105, 24, 4, mColors[i]);
+
+    tft.setTextDatum(TL_DATUM);
+    brFont.drawMonoText(metrics[i], x+6, cardY+5, BR_MONO_TINY, mColors[i]);
+    tft.setTextColor(COLOR_WHITE);
+    tft.setTextDatum(TR_DATUM);
+    tft.drawString(values[i], x+100, cardY+13, 1);
+  }
 
   // 5-day forecast
   tft.setTextColor(COLOR_CYBER_BLUE);
