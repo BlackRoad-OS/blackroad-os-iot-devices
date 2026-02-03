@@ -1,3 +1,9 @@
+# blackroad-os-iot-devices
+
+[![GitHub](https://img.shields.io/badge/GitHub-BlackRoad-OS-purple?style=for-the-badge&logo=github)](https://github.com/BlackRoad-OS/blackroad-os-iot-devices)
+[![Status](https://img.shields.io/badge/Status-Active-success?style=for-the-badge)](https://github.com/BlackRoad-OS/blackroad-os-iot-devices)
+[![BlackRoad](https://img.shields.io/badge/BlackRoad-OS-black?style=for-the-badge)](https://blackroad.io)
+
 # BlackRoad OS - IoT Devices
 
 **Production-Grade IoT Infrastructure for Fortune 500 Operations**
