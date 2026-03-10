@@ -7,9 +7,56 @@ on:
     branches: [main]
 
 jobs:
-  build:
+  # ────────────────────────────────────────────────────────────────
+  # 1. Native unit tests – run on the host, no hardware needed
+  # ────────────────────────────────────────────────────────────────
+  unit-tests:
+    name: Unit Tests (native)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
-      - name: Build
-        run: echo "Build step - customize based on project type"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install PlatformIO
+        run: pip install platformio
+
+      - name: Run native unit tests
+        run: pio test -e native --verbose
+
+  # ────────────────────────────────────────────────────────────────
+  # 2. Firmware build – compile the ESP32 firmware (no upload)
+  # ────────────────────────────────────────────────────────────────
+  firmware-build:
+    name: Firmware Build (ESP32)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install PlatformIO
+        run: pip install platformio
+
+      - name: Create secrets.h from example (CI stub – no real secrets)
+        run: cp src/secrets.h.example src/secrets.h
+
+      - name: Create config.h for CI (stub WiFi credentials)
+        run: |
+          sed \
+            -e 's|"YOUR_WIFI_SSID"|"CI_TEST_SSID"|g' \
+            -e 's|"YOUR_WIFI_PASSWORD"|"CI_TEST_PASS"|g' \
+            include/config.h.example > include/config.h
+
+      - name: Compile firmware (esp32dev)
+        run: pio run -e esp32dev

@@ -46,6 +46,7 @@ BlackRoadFont brFont(&tft);  // BlackRoad Mono font system
 #include "sovereign_stack.h"   // Sovereign Stack Monitor
 #include "alerts.h"            // Real-time Alert System
 #include "performance.h"       // Performance Monitor
+#include "api_functions.h"     // GitHub, CoinGecko, Weather & Stripe API integrations
 
 // Golden Ratio Spacing System (φ = 1.618)
 #define SPACE_XS   8   // Base
@@ -2945,6 +2946,12 @@ void drawGitHub() {
   drawStatusBar();
   drawBackButton();
 
+  // Determine whether live data has been fetched
+  bool hasLiveData = (githubData.lastUpdate > 0);
+
+  // Max characters of a commit message that fit in the activity row on this display
+  static const int MAX_COMMIT_MSG_DISPLAY_LENGTH = 22;
+
   // Title
   tft.setTextColor(COLOR_VIVID_PUR);
   tft.setTextDatum(TC_DATUM);
@@ -2956,7 +2963,10 @@ void drawGitHub() {
   brFont.drawMonoText("@BlackRoad-OS", 15, 55, 2, COLOR_WHITE);
 
   tft.setTextColor(COLOR_DARK_GRAY);
-  brFont.drawMonoText("66 repos • 15 orgs", 15, 73, 1, COLOR_WHITE);
+  String repoLine = hasLiveData
+    ? (String(githubData.totalRepos) + " repos • 15 orgs")
+    : "66 repos • 15 orgs";
+  brFont.drawMonoText(repoLine.c_str(), 15, 73, 1, COLOR_WHITE);
 
   // Quick stats cards - 4 across!
   int cardY = 92;
@@ -2967,64 +2977,94 @@ void drawGitHub() {
   tft.setTextDatum(TL_DATUM);
   brFont.drawMonoText("Repos", 16, cardY + 6, 1, COLOR_WHITE);
   tft.setTextColor(COLOR_VIVID_PUR);
-  brFont.drawMonoText("66", 16, cardY + 21, 2, COLOR_WHITE);
+  String reposStr = hasLiveData ? String(githubData.totalRepos) : "66";
+  brFont.drawMonoText(reposStr.c_str(), 16, cardY + 21, 2, COLOR_WHITE);
 
   // Stars
   drawCard(66, cardY, 52, 42, COLOR_SUNRISE);
   tft.setTextColor(COLOR_WHITE);
   brFont.drawMonoText("Stars", 72, cardY + 6, 1, COLOR_WHITE);
   tft.setTextColor(COLOR_SUNRISE);
-  brFont.drawMonoText("847", 72, cardY + 21, 2, COLOR_WHITE);
+  String starsStr = hasLiveData ? String(githubData.starsTotal) : "847";
+  brFont.drawMonoText(starsStr.c_str(), 72, cardY + 21, 2, COLOR_WHITE);
 
   // PRs
   drawCard(122, cardY, 52, 42, COLOR_HOT_PINK);
   tft.setTextColor(COLOR_WHITE);
   brFont.drawMonoText("PRs", 128, cardY + 6, 1, COLOR_WHITE);
   tft.setTextColor(COLOR_HOT_PINK);
-  brFont.drawMonoText("5", 128, cardY + 21, 2, COLOR_WHITE);
+  String prsStr = hasLiveData ? String(githubData.openPRs) : "5";
+  brFont.drawMonoText(prsStr.c_str(), 128, cardY + 21, 2, COLOR_WHITE);
 
   // Issues
   drawCard(178, cardY, 52, 42, COLOR_CYBER_BLUE);
   tft.setTextColor(COLOR_WHITE);
   brFont.drawMonoText("Issue", 184, cardY + 6, 1, COLOR_WHITE);
   tft.setTextColor(COLOR_CYBER_BLUE);
-  brFont.drawMonoText("12", 184, cardY + 21, 2, COLOR_WHITE);
+  String issuesStr = hasLiveData ? String(githubData.openIssues) : "12";
+  brFont.drawMonoText(issuesStr.c_str(), 184, cardY + 21, 2, COLOR_WHITE);
 
   // Recent activity
   tft.setTextColor(COLOR_VIVID_PUR);
   tft.setTextDatum(TL_DATUM);
   brFont.drawMonoText("RECENT ACTIVITY", 15, 150, 2, COLOR_WHITE);
 
-  const char* activities[] = {
-    "Merged PR #123 - Add auth",
-    "Created Issue #456",
-    "Pushed to main branch",
-    "Workflow run succeeded",
-    "Commented on PR #122"
-  };
-
-  const char* times[] = {"2m ago", "15m ago", "1h ago", "2h ago", "3h ago"};
-
   int y = 172;
-  for(int i = 0; i < 5; i++) {
-    // Activity
+  if (hasLiveData && githubData.lastCommitMsg[0] != '\0') {
+    // Show live last commit data on first row
+    String commitLine = String("Pushed: ") + String(githubData.lastCommitMsg).substring(0, MAX_COMMIT_MSG_DISPLAY_LENGTH);
     tft.setTextColor(COLOR_WHITE);
-    brFont.drawMonoText(activities[i], 20, y, 1, COLOR_WHITE);
-
-    // Time
+    brFont.drawMonoText(commitLine.c_str(), 20, y, 1, COLOR_WHITE);
     tft.setTextColor(COLOR_DARK_GRAY);
-    brFont.drawMonoText(times[i], 250, y, 1, COLOR_WHITE);
-
+    brFont.drawMonoText("just now", 250, y, 1, COLOR_WHITE);
     y += 22;
+
+    // Fill remaining rows with static placeholders
+    const char* activities[] = {
+      "Created Issue #456",
+      "Workflow run succeeded",
+      "Commented on PR #122"
+    };
+    const char* times[] = {"15m ago", "2h ago", "3h ago"};
+    for (int i = 0; i < 3; i++) {
+      tft.setTextColor(COLOR_WHITE);
+      brFont.drawMonoText(activities[i], 20, y, 1, COLOR_WHITE);
+      tft.setTextColor(COLOR_DARK_GRAY);
+      brFont.drawMonoText(times[i], 250, y, 1, COLOR_WHITE);
+      y += 22;
+    }
+  } else {
+    // Fully static fallback
+    const char* activities[] = {
+      "Merged PR #123 - Add auth",
+      "Created Issue #456",
+      "Pushed to main branch",
+      "Workflow run succeeded",
+      "Commented on PR #122"
+    };
+    const char* times[] = {"2m ago", "15m ago", "1h ago", "2h ago", "3h ago"};
+    for (int i = 0; i < 5; i++) {
+      tft.setTextColor(COLOR_WHITE);
+      brFont.drawMonoText(activities[i], 20, y, 1, COLOR_WHITE);
+      tft.setTextColor(COLOR_DARK_GRAY);
+      brFont.drawMonoText(times[i], 250, y, 1, COLOR_WHITE);
+      y += 22;
+    }
   }
 
-  // Stats summary
+  // Stats summary / data-freshness indicator
   tft.setTextColor(COLOR_SUNRISE);
   tft.setTextDatum(TC_DATUM);
-  brFont.drawMonoText("847 contributions this year", 160, 295, 1, COLOR_WHITE);
+  if (hasLiveData) {
+    String starsLine = String(githubData.starsTotal) + " total stars";
+    brFont.drawMonoText(starsLine.c_str(), 160, 295, 1, COLOR_WHITE);
+  } else {
+    brFont.drawMonoText("847 contributions this year", 160, 295, 1, COLOR_WHITE);
+  }
 
   drawBottomNav();
 }
+
 
 // ═══════════════════════════════════════════════════════════════════
 // LINEAR INTEGRATION - Task Tracking
@@ -4793,6 +4833,34 @@ void loop() {
 
     lastNavUpdate = millis();
   }
+
+  // Auto-fetch CoinGecko crypto prices every 60 seconds
+  #ifdef ENABLE_CRYPTO
+  static unsigned long lastCryptoFetch = 0;
+  const unsigned long CRYPTO_REFRESH_INTERVAL = 60000; // 1 minute
+
+  if (WiFi.status() == WL_CONNECTED && millis() - lastCryptoFetch > CRYPTO_REFRESH_INTERVAL) {
+    Serial.println("\n🔄 Auto-fetching crypto prices...");
+    fetchCryptoPrice();
+    lastCryptoFetch = millis();
+  }
+  #endif // ENABLE_CRYPTO
+
+  // Auto-fetch GitHub stats every 5 minutes
+  #ifdef ENABLE_GITHUB
+  static unsigned long lastGitHubFetch = 0;
+  const unsigned long GITHUB_REFRESH_INTERVAL = 300000; // 5 minutes
+
+  if (WiFi.status() == WL_CONNECTED && millis() - lastGitHubFetch > GITHUB_REFRESH_INTERVAL) {
+    Serial.println("\n🔄 Auto-fetching GitHub stats...");
+    #ifdef GITHUB_TOKEN
+      fetchGitHubStats(GITHUB_TOKEN, GITHUB_USER);
+    #else
+      fetchGitHubStats("", GITHUB_USER);
+    #endif
+    lastGitHubFetch = millis();
+  }
+  #endif // ENABLE_GITHUB
 
   delay(10);
 }
