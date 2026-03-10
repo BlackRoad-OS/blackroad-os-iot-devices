@@ -1,12 +1,13 @@
 // WiFi Configuration for BlackRoad CEO Hub
 // UPDATE THESE WITH YOUR WIFI CREDENTIALS
+// WARNING: Never commit real credentials – copy this file locally and fill in.
 
 #ifndef CONFIG_H
 #define CONFIG_H
 
 // WiFi Settings
-#define WIFI_SSID "asdfghjkl"
-#define WIFI_PASSWORD "Smushymush421!"
+#define WIFI_SSID "YOUR_WIFI_SSID"
+#define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
 
 // Device Name
 #define DEVICE_NAME "ceo-hub-esp32"

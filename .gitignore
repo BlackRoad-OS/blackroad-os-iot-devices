@@ -2,6 +2,10 @@
 
 # API Keys & Secrets - NEVER COMMIT
 src/secrets.h
+esp32/device1/firmware/src/secrets.h
+
+# Local config with real WiFi credentials - NEVER COMMIT
+include/config.h
 
 # Build artifacts
 *.bin
@@ -14,4 +18,23 @@ src/secrets.h
 
 # Logs
 *.log
-esp32/device1/firmware/src/secrets.h
+
+# Firmware backup/scratch files (not part of the build)
+src/*.bak
+src/*.bak[0-9]*
+src/*.backup*
+src/*.broken
+src/*.final
+src/*.fix
+src/*.noalias
+src/*.colors
+src/*.pre-*
+esp32/device1/firmware/src/*.bak
+esp32/device1/firmware/src/*.bak[0-9]*
+esp32/device1/firmware/src/*.backup*
+esp32/device1/firmware/src/*.broken
+esp32/device1/firmware/src/*.final
+esp32/device1/firmware/src/*.fix
+esp32/device1/firmware/src/*.colors
+esp32/device1/firmware/src/*.noalias
+esp32/device1/firmware/src/*.pre-*
